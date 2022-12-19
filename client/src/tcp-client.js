@@ -1,31 +1,54 @@
 class TcpClient {
+    interval = null
+
     constructor(client) {
         this.client = client
     }
 
-    ping() {
-        this.client.write('ping')
-    }
-
-    connect(port, host, cb) {
-        this.client.connect(port, host, cb);
-    }
-
-    write(message) {
+    async ping() {
         try {
-            this.client.write(message);
+            await this.write('ping')
         } catch (e) {
-            // TODO implement
+            console.log('trying to reconnect')
+            await this.connect()
             console.log(e)
         }
     }
 
-    destroy() {
-        this.client.destroy()
+    async connect(port, host, cb) {
+        this.interval = null
+        try {
+            await this.client.connect(port, host, cb);
+            this.interval = setInterval(this.ping, 5000)
+        } catch (e) {
+            this.interval = null
+            console.log(e)
+        }
     }
 
-    on(event, cb) {
-        this.client.on(event, cb)
+    async write(message) {
+        try {
+            await this.client.write(message);
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    async destroy() {
+        try {
+            await this.client.destroy()
+            this.interval = null
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    async on(event, cb) {
+        try {
+            await this.client.on(event, cb)
+        } catch (e) {
+            console.log(e)
+        }
     }
 }
 
