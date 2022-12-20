@@ -5,21 +5,23 @@ class TcpClient {
         this.client = client
     }
 
-    async ping() {
-        try {
-            await this.write('ping')
-        } catch (e) {
-            console.log('trying to reconnect')
-            await this.connect()
-            console.log(e)
-        }
-    }
+    /** нерабочая фича */
+    // async ping() {
+    //     try {
+    //         await this.write('ping')
+    //     } catch (e) {
+    //         console.log('trying to reconnect')
+    //         await this.connect()
+    //         console.log(e)
+    //     }
+    // }
 
     async connect(port, host, cb) {
         this.interval = null
         try {
             await this.client.connect(port, host, cb);
-            this.interval = setInterval(this.ping, 5000)
+            /** поэтому закомментил */
+            // this.interval = setInterval(this.ping, 5000)
         } catch (e) {
             this.interval = null
             console.log(e)
