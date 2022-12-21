@@ -1,3 +1,9 @@
+const state = {
+    OPEN_SESSION: 'OPEN_SESSION',
+    PING: 'PING',
+    CLOSE_SESSION: 'CLOSE_SESSION'
+}
+
 class TcpClient {
     interval = null
     pingTimeout = null
@@ -21,6 +27,7 @@ class TcpClient {
         this.interval = null
         try {
             await this.client.connect(this.port, this.host, this.cb);
+            await this.write(state.OPEN_SESSION)
             this.interval = setInterval(this.ping, 1000)
         } catch (e) {
             this.interval = null
@@ -32,7 +39,7 @@ class TcpClient {
     async ping() {
         console.log('PING')
         try {
-            await this.write('ping')
+            await this.write(state.PING)
             this.pingTimeout = setTimeout(this.close, 5000)
         } catch (e) {
             console.log(e)
@@ -52,6 +59,7 @@ class TcpClient {
     async close(markups) {
         try {
             await this.client.write(markups);
+            await this.write(state.CLOSE_SESSION)
             await this.client.destroy()
         } catch (e) {
             console.log(e)
