@@ -37,6 +37,7 @@ function sendMarkup() {
 
 client.connect(8081, '127.0.0.1', function() {
 	console.log('Connected');
+	client.write("OPEN_SESSION");
 }).catch(log)
 
 client.on('data', function(_data) {
