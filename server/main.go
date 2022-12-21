@@ -1,33 +1,31 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-// func _setInterval(c net.Conn, interval time.Duration) chan<- bool {
-// 	ticker := time.NewTicker(interval)
-// 	stopIt := make(chan bool)
-// 	go func() {
-// 		for {
-// 			select {
-// 			case <-stopIt:
-// 				fmt.Println("stop setInterval")
-// 				return
-// 			case <-ticker.C:
-// 				sendRequestDataCommand(c)
-// 			}
-// 		}
+func _setInterval(c net.Conn, interval time.Duration) chan<- bool {
+	ticker := time.NewTicker(interval)
+	stopIt := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-stopIt:
+				fmt.Println("stop setInterval")
+				return
+			case <-ticker.C:
+				sendRequestDataCommand(c)
+			}
+		}
 
-// 	}()
+	}()
 
-// 	return stopIt
-// }
+	return stopIt
+}
 
 func createNewSession(c net.Conn) {
 	id := uuid.New()
@@ -51,26 +49,20 @@ func HandleConnection(c net.Conn) {
 	createNewSession(c)
 	sendInitialMarkup(c)
 
-	// go _setInterval(c, 10*time.Second)
-	time.Sleep(3 * time.Second)
-
-	sendRequestDataCommand(c)
+	go _setInterval(c, 5*time.Second)
 
 	fmt.Printf("Waiting for data from %s\n", c.RemoteAddr().String())
 
 	for {
-		netData, err := bufio.NewReader(c).ReadString('\n')
+		// Make a buffer to hold incoming data.
+		buf := make([]byte, 1024)
+		// Read the incoming connection into the buffer.
+		_, err := c.Read(buf)
 		if err != nil {
-			fmt.Println(err)
-			return
+			fmt.Println("Error reading:", err.Error())
 		}
 
-		temp := strings.TrimSpace(string(netData))
-		fmt.Printf("FROM %s: %s\n", c.RemoteAddr().String(), temp)
-
-		if temp == "STOP" {
-			break
-		}
+		fmt.Printf("Received from %s: %s\n", c.RemoteAddr().String(), buf)
 	}
 
 	// c.Close()
