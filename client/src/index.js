@@ -1,7 +1,9 @@
 const net = require('net');
 const TcpClient = require("./tcp-client");
 
-const client = new TcpClient(new net.Socket());
+const client = new TcpClient(new net.Socket(), 8081, '127.0.0.1', function() {
+	console.log('Connected');
+});
 const log = console.log
 
 const markup = { id: null, data: [] };
@@ -35,10 +37,9 @@ function sendMarkup() {
 	console.log('MARKUP WAS SENT!')
 }
 
-client.connect(8081, '127.0.0.1', function() {
-	console.log('Connected');
-	client.write("OPEN_SESSION");
-}).catch(log)
+client.connect().catch(log)
+
+let markups = []
 
 client.on('data', function(_data) {
 	const data = _data.toString();
@@ -48,14 +49,17 @@ client.on('data', function(_data) {
 		markup.id = parsedMarkup.id
 		markup.data = parsedMarkup.data
 
-		generateRandomData()
+		// generateRandomData()
 	} else {
 		command = data
 		switch (command) {
 			case 'REQUEST_DATA': {
-				sendMarkup()
+				// sendMarkup()
 
 				break
+			}
+			case 'OK': {
+				client.onOk()
 			}
 			default: {
 				console.log(`Received command '${command}' is not supported`)
