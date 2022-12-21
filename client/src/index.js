@@ -1,4 +1,5 @@
 const net = require('net');
+const { exit } = require('process');
 const TcpClient = require("./tcp-client");
 
 const client = new TcpClient(new net.Socket(), 8081, '127.0.0.1', function() {
@@ -49,17 +50,19 @@ client.on('data', function(_data) {
 		markup.id = parsedMarkup.id
 		markup.data = parsedMarkup.data
 
-		// generateRandomData()
+		generateRandomData()
 	} else {
 		command = data
 		switch (command) {
 			case 'REQUEST_DATA': {
-				// sendMarkup()
+				sendMarkup()
 
 				break
 			}
 			case 'OK': {
 				client.onOk()
+
+				break
 			}
 			default: {
 				console.log(`Received command '${command}' is not supported`)
@@ -74,4 +77,5 @@ client.on('data', function(_data) {
 
 client.on('close', function() {
 	console.log('Connection closed');
+	exit()
 }).catch(log);

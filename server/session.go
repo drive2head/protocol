@@ -17,7 +17,8 @@ type Session struct {
 	Status SessionStatus
 }
 
-var sessions map[string]Session
+var sessions map[string]Session = make(map[string]Session)
+var stoppers map[string]chan bool = make(map[string]chan bool)
 
 func OpenSession(c net.Conn) {
 	addr := c.RemoteAddr().String()
@@ -26,15 +27,17 @@ func OpenSession(c net.Conn) {
 		Status: ACTIVE,
 	}
 
-	fmt.Printf("Opened new session for %s\n", addr)
+	fmt.Printf("[%s] Opened new session\n", addr)
 }
 
 func CloseSession(c net.Conn) {
+	stoppers[c.LocalAddr().String()] <- true
+
 	addr := c.RemoteAddr().String()
 	sessions[addr] = Session{
 		Addr:   addr,
 		Status: CLOSED,
 	}
 
-	fmt.Printf("Session closed for %s\n", addr)
+	fmt.Printf("[%s] Session closed\n", addr)
 }

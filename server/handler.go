@@ -4,20 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 )
 
 var markup Markup
 
-func scheduleDataRequests(c net.Conn, interval time.Duration) chan<- bool {
-	ticker := time.NewTicker(interval)
+func scheduleDataRequests(c net.Conn, interval time.Duration) {
 	stopIt := make(chan bool)
+	stoppers[c.LocalAddr().String()] = stopIt
+
+	ticker := time.NewTicker(interval)
 	go func() {
 		for {
 			select {
 			case <-stopIt:
-				fmt.Println("Stopping data requests scheduling...")
+				fmt.Printf("[%s] Stopping data requests scheduling...\n", c.RemoteAddr().String())
 				return
 			case <-ticker.C:
 				sendCommand(c, REQUEST_DATA)
@@ -25,34 +26,32 @@ func scheduleDataRequests(c net.Conn, interval time.Duration) chan<- bool {
 		}
 
 	}()
-
-	return stopIt
 }
 
 func sendInitialMarkup(c net.Conn) {
-	fmt.Println("Initial markup was sent!")
 	c.Write([]byte(`{"id":1,"data":["a","b"]}`))
+	fmt.Printf("[%s] Initial markup was sent!\n", c.RemoteAddr().String())
 }
 
 // func sendCommand(c net.Conn, command Command) {
 func sendCommand(c net.Conn, command string) {
 	c.Write([]byte(command))
-	fmt.Printf("%s was sent!\n", command)
+	fmt.Printf("[%s] Command '%s' was sent!\n", c.RemoteAddr().String(), command)
 }
 
-func handleData(c net.Conn, data []byte) {
+func handleData(c net.Conn, buf []byte, n int) {
+	data := buf[0:n]
+
 	if isJson(data) {
 		json.Unmarshal(data, &markup)
 	} else {
-		command := strings.TrimSpace(string(data))
+		command := string(data)
 
 		switch command {
 		case "OPEN_SESSION":
-			{
-				OpenSession(c)
-				go scheduleDataRequests(c, 5*time.Second)
-				sendInitialMarkup(c)
-			}
+			OpenSession(c)
+			go scheduleDataRequests(c, 5*time.Second)
+			sendInitialMarkup(c)
 		case "PING":
 			{
 				sendCommand(c, OK)
@@ -71,19 +70,21 @@ func handleData(c net.Conn, data []byte) {
 }
 
 func HandleConnection(c net.Conn) {
-	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
-	// fmt.Printf("Waiting for data from %s\n", c.RemoteAddr().String()) // debug
+	fmt.Printf("[%s] TCP connection established\n", c.RemoteAddr().String())
 	for {
 		buf := make([]byte, 1024)
-		_, err := c.Read(buf)
+		n, err := c.Read(buf)
 		if err != nil {
-			fmt.Println("Error reading:", err.Error())
+			fmt.Printf("[%s] Error reading: %s\n", c.RemoteAddr().String(), err.Error())
+			CloseSession(c)
+			fmt.Printf("[%s] TCP connection closed\n", c.RemoteAddr().String())
+			c.Close()
 			break
 		}
 
 		fmt.Println()
 		fmt.Printf("[%s] Received: %s\n", c.RemoteAddr().String(), buf)
-		handleData(c, buf)
+		handleData(c, buf, n)
 	}
 
 	c.Close()

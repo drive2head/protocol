@@ -68,6 +68,7 @@ class TcpClient {
     }
 
     async destroy() {
+        clearInterval(this.interval)
         this.interval = null
         this.pingTimeout = null
         try {
@@ -82,7 +83,7 @@ class TcpClient {
         try {
             await this.client.on(event, cb)
         } catch (e) {
-            console.log(e)
+            // console.log(e)
             await this.destroy()
         }
     }
